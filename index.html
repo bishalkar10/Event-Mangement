@@ -28,5 +28,37 @@
         <button id="closeTimeSlotBtn"><i class="fas fa-x"></i></button>
       </div>
     </div>
+
+    <div class="modal-overlay" id="bookingModal">
+      <div class="modal">
+        <h3>Schedule Time</h3>
+        <div class="time-input">
+          <select id="hours">
+            <option value="0">0 hours</option>
+            <option value="1">1 hour</option>
+            <option value="2">2 hours</option>
+            <option value="3">3 hours</option>
+            <option value="4">4 hours</option>
+            <option value="5">5 hours</option>
+            <option value="6">6 hours</option>
+            <option value="7">7 hours</option>
+            <option value="8">8 hours</option>
+            <option value="9">9 hours</option>
+            <option value="10">10 hours</option>
+            <option value="11">11 hours</option>
+            <option value="12">12 hours</option>
+          </select>
+          <select id="minutes">
+            <option value="0">00 minutes</option>
+            <option value="30">30 minutes</option>
+          </select>
+        </div>
+        <div class="modal-buttons">
+          <button class="secondary" id="viewOnlyBtn">View Only</button>
+          <button class="secondary" id="cancelBtn">Cancel</button>
+          <button class="primary" id="confirmBtn">Confirm</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
