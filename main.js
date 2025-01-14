@@ -77,6 +77,9 @@ class ScheduleManager {
         day
       );
 
+      const dateKey = this.getDateKey(currentDay);
+      dayElement.setAttribute("data-date", dateKey);
+
       // Check if day is in the past
       if (currentDay < new Date().setHours(0, 0, 0, 0)) {
         dayElement.classList.add("disabled");
@@ -92,7 +95,6 @@ class ScheduleManager {
       }
 
       // Mark days with events
-      const dateKey = this.getDateKey(currentDay);
       if (this.scheduleData[dateKey]?.length > 0) {
         dayElement.classList.add("has-events");
       }
@@ -117,6 +119,18 @@ class ScheduleManager {
     this.renderTimeSlots();
   }
 
+  updateCalendarDay(dateKey) {
+    const dayElement = document.querySelector(`[data-date='${dateKey}']`);
+
+    if (dayElement) {
+      if (this.scheduleData[dateKey]?.length > 0) {
+        dayElement.classList.add("has-events");
+      } else {
+        dayElement.classList.remove("has-events");
+      }
+    }
+  }
+
   renderTimeSlots() {
     const selectedDateText = document.getElementById("selectedDateText");
     if (selectedDateText) {
@@ -135,6 +149,7 @@ class ScheduleManager {
     for (let hour = 0; hour < 24; hour++) {
       const timeSlot = document.createElement("div");
       timeSlot.className = "time-slot";
+      timeSlot.setAttribute("data-hour", hour);
       if (selectedSlots.includes(hour)) {
         timeSlot.classList.add("selected");
       }
@@ -154,15 +169,19 @@ class ScheduleManager {
     }
 
     const index = this.scheduleData[dateKey].indexOf(hour);
+    const timeSlotElement = document.querySelector(`[data-hour="${hour}"]`);
+
     if (index === -1) {
       this.scheduleData[dateKey].push(hour);
+      timeSlotElement?.classList.add("selected"); // Add selected class
     } else {
       this.scheduleData[dateKey].splice(index, 1);
+      timeSlotElement?.classList.remove("selected"); // Remove selected class
     }
 
     this.saveScheduleData();
     this.renderTimeSlots();
-    this.renderCalendarDays(); // Update calendar to show/hide event indicators
+    this.updateCalendarDay(dateKey); // Update calendar to show/hide event indicators
   }
 
   closeTimeSlot() {
