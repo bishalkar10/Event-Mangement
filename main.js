@@ -1,16 +1,17 @@
-const timeSlotsContainer = document.getElementById("timeSlotsContainer");
-
 class ScheduleManager {
   constructor() {
     this.currentDate = new Date();
     this.selectedDate = null;
     this.scheduleData = this.loadScheduleData();
+    this.currentMonthBookings = {}; // Initialize empty object
     this.bookingDuration = { hours: 0, minutes: 0 };
     this.viewOnly = false;
-    this.initializeModal();
 
+    this.updateCurrentMonthBookings(); // Update before initialization
+    this.initializeModal();
     this.initializeCalendar();
     this.attachEventListeners();
+    console.log(this.currentMonthBookings);
   }
 
   initializeModal() {
@@ -51,18 +52,16 @@ class ScheduleManager {
     });
   }
 
-  initializeCalendar() {
-    this.renderCalendarDays();
-    this.updateMonthDisplay();
-  }
+  handleDateClick(date) {
+    if (this.selectedDate === date) {
+      document.getElementById("timeSlots").classList.remove("active");
+      this.selectedDate = null;
+      return;
+    }
 
-  loadScheduleData() {
-    const savedData = localStorage.getItem("scheduleData");
-    return savedData ? JSON.parse(savedData) : {};
-  }
-
-  saveScheduleData() {
-    localStorage.setItem("scheduleData", JSON.stringify(this.scheduleData));
+    this.selectedDate = date;
+    const modal = document.getElementById("bookingModal");
+    modal.style.display = "flex";
   }
 
   updateMonthDisplay() {
@@ -71,6 +70,76 @@ class ScheduleManager {
       year: "numeric",
     });
     document.getElementById("currentMonth").textContent = monthYear;
+  }
+
+  initializeCalendar() {
+    this.renderCalendarDays();
+    this.updateMonthDisplay();
+  }
+
+  loadScheduleData() {
+    const savedData = localStorage.getItem("scheduleDataTwo");
+    return savedData ? JSON.parse(savedData) : {};
+  }
+
+  saveScheduleData() {
+    localStorage.setItem("scheduleDataTwo", JSON.stringify(this.scheduleData));
+  }
+
+  updateCurrentMonthBookings() {
+    this.currentMonthBookings = {};
+
+    // Filter bookings for the current month and transform into date-hour format
+    Object.entries(this.scheduleData).forEach(([bookingId, booking]) => {
+      let bookingDate = new Date(booking.startDate);
+      let currentHour = booking.startHour;
+      let remainingHours = booking.duration.hours;
+      let remainingMinutes = booking.duration.minutes;
+
+      while (remainingHours > 0 || remainingMinutes > 0) {
+        const dateKey = this.getDateKey(bookingDate);
+
+        if (!this.currentMonthBookings[dateKey]) {
+          this.currentMonthBookings[dateKey] = {};
+        }
+
+        // Add full hours
+        while (currentHour < 24 && remainingHours > 0) {
+          this.currentMonthBookings[dateKey][currentHour] = {
+            status: "full",
+            bookingId: bookingId,
+          };
+          currentHour++;
+          remainingHours--;
+        }
+
+        // Handle the case where remaining minutes don't fit in the current day
+        if (
+          currentHour === 24 ||
+          (remainingHours === 0 && remainingMinutes > 0)
+        ) {
+          if (currentHour === 24) {
+            bookingDate.setDate(bookingDate.getDate() + 1);
+            currentHour = 0;
+          } else {
+            // Add remaining minutes as "half" hour booking
+            this.currentMonthBookings[dateKey][currentHour] = {
+              status: "half",
+              bookingId: bookingId,
+            };
+            remainingMinutes = 0;
+          }
+          continue;
+        }
+      }
+    });
+  }
+
+  hasBookingsOnDate(dateStr) {
+    return (
+      this.currentMonthBookings[dateStr] &&
+      Object.keys(this.currentMonthBookings[dateStr]).length > 0
+    );
   }
 
   renderCalendarDays() {
@@ -107,36 +176,41 @@ class ScheduleManager {
 
     // Add days of the month
     const today = new Date();
+    today.setUTCHours(0, 0, 0, 0); // Ensure today is set to midnight UTC
+
     for (let day = 1; day <= lastDay.getDate(); day++) {
       const dayElement = document.createElement("div");
       dayElement.className = "calendar-day";
       dayElement.textContent = day;
 
+      // Create the current day in UTC
       const currentDay = new Date(
-        this.currentDate.getFullYear(),
-        this.currentDate.getMonth(),
-        day
+        Date.UTC(
+          this.currentDate.getFullYear(),
+          this.currentDate.getMonth(),
+          day
+        )
       );
 
       const dateKey = this.getDateKey(currentDay);
       dayElement.setAttribute("data-date", dateKey);
 
       // Check if day is in the past
-      if (currentDay < new Date().setHours(0, 0, 0, 0)) {
+      if (currentDay < today) {
         dayElement.classList.add("disabled");
       } else {
         dayElement.addEventListener("click", () =>
-          this.handleDateClick(currentDay)
+          this.handleDateClick(new Date(currentDay))
         );
       }
 
       // Highlight today
-      if (currentDay.toDateString() === today.toDateString()) {
+      if (currentDay.getTime() === today.getTime()) {
         dayElement.classList.add("today");
       }
 
-      // Mark days with events
-      if (this.scheduleData[dateKey]?.length > 0) {
+      // Check for bookings using currentMonthBookings
+      if (this.currentMonthBookings[dateKey]) {
         dayElement.classList.add("has-events");
       }
 
@@ -144,48 +218,22 @@ class ScheduleManager {
     }
   }
 
-  // this is used to store selected timeslots in localstorage via keypair value
   getDateKey(date) {
     return date.toISOString().split("T")[0];
-  }
-
-  handleDateClick(date) {
-    if (this.selectedDate === date) {
-      document.getElementById("timeSlots").classList.remove("active");
-      this.selectedDate = null;
-      return;
-    }
-
-    this.selectedDate = date;
-    const modal = document.getElementById("bookingModal");
-    modal.style.display = "flex";
-  }
-
-  updateCalendarDay(dateKey) {
-    const dayElement = document.querySelector(`[data-date='${dateKey}']`);
-
-    if (dayElement) {
-      if (this.scheduleData[dateKey]?.length > 0) {
-        dayElement.classList.add("has-events");
-      } else {
-        dayElement.classList.remove("has-events");
-      }
-    }
   }
 
   renderTimeSlots() {
     const selectedDateText = document.getElementById("selectedDateText");
     if (selectedDateText) {
-      const formattedDate = new Date(this.selectedDate).toDateString(); // Format the date
-      selectedDateText.innerHTML = formattedDate;
+      selectedDateText.innerHTML = this.selectedDate.toDateString();
     }
 
     timeSlotsContainer.classList.add("active");
     const timeSlots = document.getElementById("timeSlots");
     timeSlots.innerHTML = "";
 
-    const dateKey = this.getDateKey(this.selectedDate);
-    const selectedSlots = this.scheduleData[dateKey] || [];
+    const dateStr = this.getDateKey(this.selectedDate);
+    const dayBookings = this.currentMonthBookings[dateStr] || {};
 
     // Create 24-hour slots
     for (let hour = 0; hour < 24; hour++) {
@@ -193,142 +241,221 @@ class ScheduleManager {
       timeSlot.className = "time-slot";
       timeSlot.setAttribute("data-hour", hour);
 
-      // Check for full and half selections
-      if (selectedSlots.includes(`${hour}-full`)) {
-        timeSlot.classList.add("selected");
-      } else if (selectedSlots.includes(`${hour}-half`)) {
-        timeSlot.classList.add("half-selected");
+      const booking = dayBookings[hour];
+      if (booking) {
+        timeSlot.setAttribute("data-booking-id", booking.bookingId);
+        timeSlot.classList.add(
+          booking.status === "half" ? "half-selected" : "selected"
+        );
       }
 
       const timeString = `${hour.toString().padStart(2, "0")}:00`;
       timeSlot.textContent = timeString;
-
-      timeSlot.addEventListener("click", (e) => {
-        if (this.viewOnly) {
-          this.deleteBooking(hour, e.target);
-        } else {
-          this.addBooking(hour);
-        }
-      });
       timeSlots.appendChild(timeSlot);
     }
   }
 
-  deleteBooking(hour, clickedElement) {
-    const dateKey = this.getDateKey(this.selectedDate);
+  addBooking(startHour) {
+    // Check if booking duration is 0 hours and 0 minutes
+    if (
+      this.bookingDuration.hours === 0 &&
+      this.bookingDuration.minutes === 0
+    ) {
+      return;
+    }
 
-    if (this.scheduleData[dateKey]) {
-      const regex = new RegExp(`^${hour}-(full|half)$`);
-      const index = this.scheduleData[dateKey].findIndex((slot) =>
-        regex.test(slot)
+    const dateStr = this.getDateKey(this.selectedDate);
+    const dayBookings = this.currentMonthBookings[dateStr] || {};
+
+    // Calculate the end time of the new booking
+    const newBookingEnd =
+      startHour +
+      (this.bookingDuration.hours - 1) +
+      this.bookingDuration.minutes / 60;
+
+    console.log("New booking start:", startHour, "end:", newBookingEnd);
+
+    const isOverlapping = this.checkBookingOverlap(
+      startHour,
+      this.bookingDuration,
+      dayBookings
+    );
+
+    if (isOverlapping) {
+      alert(
+        "Cannot add the meeting here. It collides with an existing booking"
       );
-
-      if (index !== -1) {
-        this.scheduleData[dateKey].splice(index, 1);
-
-        if (clickedElement) {
-          clickedElement.className = "time-slot";
-        }
-
-        if (this.scheduleData[dateKey].length === 0) {
-          delete this.scheduleData[dateKey];
-        }
-
-        this.saveScheduleData();
-        this.updateCalendarDay(dateKey);
-      }
-    }
-  }
-
-  addBooking(hour) {
-    const dateKey = this.getDateKey(this.selectedDate);
-
-    if (!this.scheduleData[dateKey]) {
-      this.scheduleData[dateKey] = [];
+      return;
     }
 
-    const fullHours = this.bookingDuration.hours;
-    const extraMinutes = this.bookingDuration.minutes;
+    const bookingId = Date.now().toString();
 
-    let nextDayKey = null; // To handle overflow into the next day
-
-    // Add the current hour and consecutive full hours to the schedule
-    for (let i = 0; i < fullHours; i++) {
-      const currentHour = hour + i;
-
-      if (currentHour < 24) {
-        if (!this.scheduleData[dateKey].includes(`${currentHour}-full`)) {
-          this.scheduleData[dateKey].push(`${currentHour}-full`);
-        }
-      } else {
-        // Handle overflow to the next day
-        if (!nextDayKey) {
-          const nextDay = new Date(this.selectedDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          nextDayKey = this.getDateKey(nextDay);
-          if (!this.scheduleData[nextDayKey]) {
-            this.scheduleData[nextDayKey] = [];
-          }
-        }
-        const overflowHour = currentHour - 24;
-        if (!this.scheduleData[nextDayKey].includes(`${overflowHour}-full`)) {
-          this.scheduleData[nextDayKey].push(`${overflowHour}-full`);
-        }
-      }
-    }
-
-    // Handle the extra 30 minutes
-    if (extraMinutes === 30) {
-      const lastHour = hour + fullHours;
-
-      if (lastHour < 24) {
-        if (!this.scheduleData[dateKey].includes(`${lastHour}-half`)) {
-          this.scheduleData[dateKey].push(`${lastHour}-half`);
-        }
-      } else {
-        if (!nextDayKey) {
-          const nextDay = new Date(this.selectedDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          nextDayKey = this.getDateKey(nextDay);
-          if (!this.scheduleData[nextDayKey]) {
-            this.scheduleData[nextDayKey] = [];
-          }
-        }
-        const overflowHour = lastHour - 24;
-        if (!this.scheduleData[nextDayKey].includes(`${overflowHour}-half`)) {
-          this.scheduleData[nextDayKey].push(`${overflowHour}-half`);
-        }
-      }
-    }
+    this.scheduleData[bookingId] = {
+      startDate: this.getDateKey(this.selectedDate),
+      startHour: startHour,
+      duration: { ...this.bookingDuration },
+    };
 
     this.saveScheduleData();
+    this.updateCurrentMonthBookings();
     this.renderTimeSlots();
     this.renderCalendarDays();
 
-    // Reset booking duration
     this.bookingDuration = { hours: 0, minutes: 0 };
   }
 
-  toggleTimeSlot(hour) {
-    const dateKey = this.getDateKey(this.selectedDate);
-    if (!this.scheduleData[dateKey]) {
-      this.scheduleData[dateKey] = [];
+  addBooking(startHour) {
+    if (
+      this.bookingDuration.hours === 0 &&
+      this.bookingDuration.minutes === 0
+    ) {
+      return;
     }
 
-    const index = this.scheduleData[dateKey].indexOf(hour);
-    const timeSlotElement = document.querySelector(`[data-hour="${hour}"]`);
+    const dateStr = this.getDateKey(this.selectedDate);
+    const dayBookings = this.currentMonthBookings[dateStr] || {};
 
-    if (index === -1) {
-      this.scheduleData[dateKey].push(hour);
-      timeSlotElement?.classList.add("selected"); // Add selected class
-    } else {
-      this.scheduleData[dateKey].splice(index, 1);
-      timeSlotElement?.classList.remove("selected"); // Remove selected class
+    // Calculate the end time of the new booking
+    const newBookingEnd =
+      startHour +
+      (this.bookingDuration.hours - 1) +
+      Math.ceil(this.bookingDuration.minutes / 60);
+
+    console.log("New booking start:", startHour, "end:", newBookingEnd);
+
+    const isOverlapping = this.checkBookingOverlap(
+      startHour,
+      this.bookingDuration,
+      dayBookings
+    );
+
+    if (isOverlapping) {
+      alert(
+        "Cannot add the meeting here. It collides with an existing booking."
+      );
+      return;
     }
+
+    const bookingId = Date.now().toString();
+
+    this.scheduleData[bookingId] = {
+      startDate: dateStr,
+      startHour: startHour,
+      duration: { ...this.bookingDuration },
+    };
 
     this.saveScheduleData();
+    this.updateCurrentMonthBookings();
     this.renderTimeSlots();
-    this.updateCalendarDay(dateKey); // Update calendar to show/hide event indicators
+    this.renderCalendarDays();
+
+    this.bookingDuration = { hours: 0, minutes: 0 };
+  }
+
+  checkBookingOverlap(startHour, bookingDuration, dayBookings) {
+    const newBookingEnd =
+      startHour +
+      (bookingDuration.hours - 1) +
+      Math.ceil(bookingDuration.minutes / 60);
+
+    // Check the current day's bookings
+    for (let i = startHour; i <= Math.min(newBookingEnd, 23); i++) {
+      if (i in dayBookings) return true;
+    }
+
+    // If the booking overflows into the next day
+    if (newBookingEnd > 23) {
+      const nextDate = new Date(this.selectedDate);
+      nextDate.setDate(nextDate.getDate() + 1); // Move to the next day
+      const nextDateStr = this.getDateKey(nextDate);
+      const nextDayBookings = this.currentMonthBookings[nextDateStr] || {};
+      console.log(nextDayBookings);
+      for (let i = 0; i <= newBookingEnd - 24; i++) {
+        console.log(i);
+        if (i in nextDayBookings) return true;
+      }
+    }
+
+    return false; // No overlap found
+  }
+
+  deleteBooking(bookingId) {
+    if (this.scheduleData[bookingId]) {
+      delete this.scheduleData[bookingId];
+      this.saveScheduleData();
+      this.updateCurrentMonthBookings();
+      this.renderTimeSlots();
+      this.renderCalendarDays();
+    }
+  }
+
+  showBookingOptions(bookingId, timeSlot) {
+    const optionsMenu = this.createOptionsMenu(timeSlot);
+    document.body.appendChild(optionsMenu);
+    this.setupDeleteBookingHandler(optionsMenu, bookingId);
+    this.setupChangeSlotHandler(optionsMenu, bookingId);
+  }
+
+  setupDeleteBookingHandler(optionsMenu, bookingId) {
+    const deleteBookingHandler = () => {
+      this.deleteBooking(bookingId);
+      document.body.removeChild(optionsMenu); // Remove options menu
+    };
+
+    // Attach the event listener for deleting the booking
+    document
+      .getElementById("deleteBookingBtn")
+      .addEventListener("click", deleteBookingHandler);
+  }
+
+  setupChangeSlotHandler(optionsMenu, bookingId) {
+    const changeSlotHandler = (e) => {
+      const newTimeSlot = e.target.closest(".time-slot");
+      if (newTimeSlot) {
+        const newStartHour = parseInt(
+          newTimeSlot.getAttribute("data-hour"),
+          10
+        );
+        this.changeBookingSlot(bookingId, newStartHour);
+        document.body.removeChild(optionsMenu); // Remove options menu
+        timeSlotsContainer.removeEventListener("click", changeSlotHandler); // Clean up the event listener
+      }
+    };
+
+    // Attach the event listener for changing the slot
+    document.getElementById("changeSlotBtn").addEventListener("click", () => {
+      timeSlotsContainer.addEventListener("click", changeSlotHandler);
+    });
+  }
+
+  createOptionsMenu(timeSlot) {
+    const optionsMenu = document.createElement("div");
+    optionsMenu.className = "options-menu";
+
+    // Position the options menu based on the clicked time slot
+    const rect = timeSlot.getBoundingClientRect();
+    optionsMenu.style.position = "absolute";
+    optionsMenu.style.top = `${rect.bottom + window.scrollY}px`; // Position below the time slot
+    optionsMenu.style.left = `${rect.left + window.scrollX}px`; // Align with the left of the time slot
+
+    optionsMenu.innerHTML = `
+      <button id="changeSlotBtn">Change Slot</button>
+      <button id="deleteBookingBtn">Delete</button>
+    `;
+
+    return optionsMenu;
+  }
+
+  changeBookingSlot(bookingId, newStartHour) {
+    if (this.scheduleData[bookingId]) {
+      const booking = this.scheduleData[bookingId];
+      booking.startDate = this.getDateKey(this.selectedDate);
+      booking.startHour = newStartHour; // Update the start hour
+      this.saveScheduleData();
+      this.updateCurrentMonthBookings();
+      this.renderTimeSlots();
+      this.renderCalendarDays();
+    }
   }
 
   closeTimeSlot() {
@@ -353,23 +480,21 @@ class ScheduleManager {
         this.closeTimeSlot();
       });
 
-    // timeSlotsContainer.addEventListener("click", (e) => {
-    //   const timeSlot = e.target.closest(".time-slot");
-    //   console.log("timeslot", timeSlot);
-    //   if (timeSlot) {
-    //     const hour = timeSlot.getAttribute("data-hour");
-    //     console.log("hour", hour);
-    //     if (this.viewOnly) {
-    //       this.deleteBooking(hour, timeSlot);
-    //     } else {
-    //       this.addBooking(hour);
-    //     }
-    //   }
-    // });
+    timeSlotsContainer.addEventListener("click", (e) => {
+      const timeSlot = e.target.closest(".time-slot");
+      if (timeSlot) {
+        const bookingId = timeSlot.getAttribute("data-booking-id");
+        if (bookingId) {
+          this.showBookingOptions(bookingId, timeSlot);
+        } else {
+          const hour = parseInt(timeSlot.getAttribute("data-hour"), 10);
+          this.addBooking(hour);
+        }
+      }
+    });
   }
 }
 
-// Initialize the schedule manager when the page loads
 window.addEventListener("DOMContentLoaded", () => {
   new ScheduleManager();
 });
