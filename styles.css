@@ -151,6 +151,12 @@ body {
   transition: background-color 0.3s;
 }
 
+.time-slot.multi-selected {
+  background-color: darkslategray;
+  color: white;
+  font-weight: bold;
+}
+
 .time-slot.selected {
   background-color: var(--selected-color);
 }
@@ -158,46 +164,6 @@ body {
 .time-slot:hover {
   background-color: var(--secondary-color);
   color: var(--text-color);
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 10px;
-    flex-direction: column;
-  }
-
-  .calendar-container {
-    width: 100%;
-  }
-
-  h2 {
-    font-size: 18px;
-  }
-
-  .calendar-day {
-    font-size: 14px;
-    padding: 5px;
-  }
-
-  #timeSlotsContainer {
-    padding: 10px;
-  }
-
-  #timeSlots {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .calendar-day-header {
-    font-size: 12px;
-  }
-
-  .calendar-day {
-    font-size: 12px;
-    padding: 3px;
-  }
 }
 
 .modal-overlay {
@@ -317,4 +283,44 @@ body {
   z-index: 1000; /* Ensure it appears above other elements */
   padding: 10px;
   border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+    flex-direction: column;
+  }
+
+  .calendar-container {
+    width: 100%;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
+
+  .calendar-day {
+    font-size: 14px;
+    padding: 5px;
+  }
+
+  #timeSlotsContainer {
+    padding: 10px;
+  }
+
+  #timeSlots {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-day-header {
+    font-size: 12px;
+  }
+
+  .calendar-day {
+    font-size: 12px;
+    padding: 3px;
+  }
 }
