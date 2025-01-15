@@ -316,12 +316,6 @@ class ScheduleManager {
     const dayBookings = this.currentMonthBookings[dateStr] || {};
 
     // Calculate the end time of the new booking
-    const newBookingEnd =
-      startHour +
-      (this.bookingDuration.hours - 1) +
-      Math.ceil(this.bookingDuration.minutes / 60);
-
-    console.log("New booking start:", startHour, "end:", newBookingEnd);
 
     const isOverlapping = this.checkBookingOverlap(
       startHour,
@@ -370,7 +364,7 @@ class ScheduleManager {
       const nextDateStr = this.getDateKey(nextDate);
       const nextDayBookings = this.currentMonthBookings[nextDateStr] || {};
       console.log(nextDayBookings);
-      for (let i = 0; i <= newBookingEnd - 24; i++) {
+      for (let i = 0; i <= newBookingEnd - 23; i++) {
         console.log(i);
         if (i in nextDayBookings) return true;
       }
@@ -449,6 +443,23 @@ class ScheduleManager {
   changeBookingSlot(bookingId, newStartHour) {
     if (this.scheduleData[bookingId]) {
       const booking = this.scheduleData[bookingId];
+
+      const dateStr = this.getDateKey(this.selectedDate);
+      const dayBookings = this.currentMonthBookings[dateStr] || {};
+
+      const isOverlapping = this.checkBookingOverlap(
+        newStartHour,
+        booking.duration,
+        dayBookings
+      );
+
+      if (isOverlapping) {
+        alert(
+          "Cannot add the meeting here. It collides with an existing booking."
+        );
+        return;
+      }
+
       booking.startDate = this.getDateKey(this.selectedDate);
       booking.startHour = newStartHour; // Update the start hour
       this.saveScheduleData();
