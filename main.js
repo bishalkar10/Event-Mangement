@@ -35,11 +35,19 @@ class ScheduleManager {
     const nameInput = document.getElementById("bookingName");
 
     confirmBtn.addEventListener("click", () => {
-      this.bookingDuration = {
-        hours: parseInt(hoursSelect.value),
-        minutes: parseInt(minutesSelect.value),
-        name: nameInput.value || "Unnamed Booking",
-      };
+      const nameInput = document.getElementById("bookingName").value.trim(); // Get trimmed value
+
+      // Only add the name if it's not an empty string
+      if (nameInput !== "") {
+        this.bookingDuration = {
+          hours: parseInt(hoursSelect.value),
+          minutes: parseInt(minutesSelect.value),
+          name: nameInput, // Use the trimmed name
+        };
+      } else {
+        this.bookingDuration.name = "Unnamed Booking"; // Default name if empty
+      }
+
       this.viewOnly = false;
       modal.style.display = "none";
       this.renderTimeSlots();

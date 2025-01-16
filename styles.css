@@ -34,10 +34,11 @@ body {
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  width: min(100vh, 100vw);
-  min-width: max-content;
+  width: 100%;
+  min-width: 0;
   max-height: max-content;
   margin: 0 auto;
+  overflow: auto;
 }
 
 .calendar-header {
@@ -63,8 +64,9 @@ body {
 .calendar-grid {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 5px;
+  min-width: 0;
 }
 
 .calendar-day-header {
@@ -86,6 +88,7 @@ body {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .calendar-day:hover:not(.disabled) {
@@ -327,12 +330,13 @@ body {
   grid-template-columns: 1fr;
   gap: 2px;
   font-size: 8px;
-  width: 100%;
+  min-width: 0;
+  width: 80%;
 }
 
 .booking-name-span,
 .booking-name {
-  display: inline-block;
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -346,10 +350,14 @@ body {
   .container {
     padding: 10px;
     flex-direction: column;
+    width: 100%;
+    min-width: 0;
   }
 
   .calendar-container {
     width: 100%;
+    padding: 10px;
+    min-width: 0;
   }
 
   h2 {
@@ -369,15 +377,28 @@ body {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .calendar-grid {
+    gap: 2px;
+  }
+
+  .calendar-day {
+    padding: 2px;
+  }
 }
 
 @media (max-width: 480px) {
   .calendar-day-header {
-    font-size: 12px;
+    font-size: 10px;
+    padding: 5px;
   }
 
   .calendar-day {
-    font-size: 12px;
-    padding: 3px;
+    font-size: 10px;
+    padding: 1px;
+  }
+
+  .bookings-list {
+    font-size: 6px;
   }
 }
