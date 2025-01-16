@@ -341,16 +341,16 @@ class ScheduleManager {
   showBookingOptions(bookingId, timeSlot) {
     // Close any existing options menu first
     this.closeOptionsMenu();
-    
+
     const optionsMenu = this.createOptionsMenu(timeSlot);
-    optionsMenu.id = 'activeOptionsMenu'; // Add an ID to track the active menu
+    optionsMenu.id = "activeOptionsMenu"; // Add an ID to track the active menu
     document.body.appendChild(optionsMenu);
     this.setupDeleteBookingHandler(optionsMenu, bookingId);
     this.setupChangeSlotHandler(optionsMenu, bookingId);
   }
 
   closeOptionsMenu() {
-    const existingMenu = document.getElementById('activeOptionsMenu');
+    const existingMenu = document.getElementById("activeOptionsMenu");
     if (existingMenu) {
       document.body.removeChild(existingMenu);
     }
@@ -456,9 +456,7 @@ class ScheduleManager {
           if (!isNaN(hour)) {
             this.changeBookingSlot(this.lastBookingId, hour); // Change the slot for the last booking
           }
-        } else if (bookingIds.length > 1) {
-          alert(`Multiple bookings: ${bookingIds.join(", ")}`);
-        } else if (bookingIds.length === 1) {
+        } else if (bookingIds.length >= 1) {
           this.showBookingOptions(bookingIds[0], timeSlot);
         } else {
           const hour = parseInt(timeSlot.getAttribute("data-hour"), 10);
@@ -472,9 +470,9 @@ class ScheduleManager {
     });
 
     // Add click event listener to close menu when clicking outside
-    document.addEventListener('click', (e) => {
-      const optionsMenu = document.getElementById('activeOptionsMenu');
-      const timeSlot = e.target.closest('.time-slot');
+    document.addEventListener("click", (e) => {
+      const optionsMenu = document.getElementById("activeOptionsMenu");
+      const timeSlot = e.target.closest(".time-slot");
       if (optionsMenu && !optionsMenu.contains(e.target) && !timeSlot) {
         this.closeOptionsMenu();
       }
