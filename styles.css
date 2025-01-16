@@ -1,14 +1,17 @@
 :root {
-  --primary-color: #2c3e50;
-  --secondary-color: #3498db;
-  --disabled-color: #ecf0f1;
-  --selected-color: #2980b9;
-  --text-color: #2c3e50;
-  --background-color: #f5f6fa;
-  --calendar-bg: #ffffff;
-  --accent-color: #e74c3c;
-  --hover-color: #34495e;
-  --booking-bg: rgba(52, 152, 219, 0.2);
+  --primary-color: #3498db;      /* Bright Blue for primary buttons */
+  --secondary-color: #e74c3c;    /* Red for secondary buttons */
+  --disabled-color: #ecf0f1;     /* Light Gray for disabled elements */
+  --selected-color: #2ecc71;     /* Green for selected items */
+  --text-color: #2c3e50;         /* Dark Blue for text */
+  --background-color: #f5f6fa;   /* Light Background */
+  --calendar-bg: #ffffff;        /* White for calendar background */
+  --accent-color: #9b59b6;       /* Purple for accents */
+  --hover-color: #34495e;        /* Darker Blue for hover effects */
+  --booking-bg: rgba(52, 152, 219, 0.2); /* Light Blue for bookings */
+  --header-bg: #2ecc71;          /* Orange for header */
+  --modal-bg: #ffffff;           /* White for modal background */
+  --modal-border: #dcdcdc;       /* Light Gray for modal border */
 }
 
 * {
@@ -49,6 +52,9 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  background-color: var(--header-bg); /* Orange background for header */
+  padding: 10px;
+  border-radius: 5px;
 }
 
 .calendar-header button {
@@ -76,7 +82,7 @@ body {
   text-align: center;
   font-weight: bold;
   padding: 10px;
-  background: var(--secondary-color);
+  background: var(--accent-color); /* Purple for day headers */
   color: white;
 }
 
@@ -100,7 +106,7 @@ body {
 }
 
 .calendar-day.today {
-  background-color: var(--primary-color);
+  background-color: var(--selected-color); /* Green for today's date */
   color: white;
 }
 
@@ -121,7 +127,7 @@ body {
   overflow: scroll;
   flex: 3;
   display: none;
-  background: white;
+  background: var(--modal-bg); /* White for time slots */
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -170,9 +176,8 @@ body {
 }
 
 .time-slot.multi-selected {
-  background-color: darkslategray;
+  background-color: #8e44ad; /* Dark Purple for multi-selected */
   color: white;
-  font-weight: bold;
 }
 
 .time-slot.selected {
@@ -199,7 +204,7 @@ body {
 }
 
 .modal {
-  background: white;
+  background: var(--modal-bg);
   padding: 20px;
   border-radius: 10px;
   width: 90%;
@@ -327,7 +332,7 @@ body {
 }
 
 .options-menu button#deleteBookingBtn {
-  background: #dc3545;
+  background: #dc3545; /* Red for delete button */
 }
 
 .bookings-list {

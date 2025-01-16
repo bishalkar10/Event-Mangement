@@ -3,13 +3,13 @@ class ScheduleManager {
     this.currentDate = new Date();
     this.selectedDate = null;
     this.scheduleData = this.loadScheduleData();
-    this.currentMonthBookings = {}; // Initialize empty object
-    this.bookingDuration = { hours: 0, minutes: 0, name: "" };
+    this.currentMonthBookings = {};
+    this.bookingDuration = { hours: 0, minutes: 0, name: "" }; // name shouldn't be inside bookingDuration
     this.viewOnly = false;
-    this.lastBookingId = null; // Track the last booking ID
-    this.changingBookingId = null; // Track which booking is being changed
+    this.lastBookingId = null;
+    this.changingBookingId = null;
 
-    this.updateCurrentMonthBookings(); // Update before initialization
+    this.updateCurrentMonthBookings();
     this.initializeModal();
     this.initializeCalendar();
     this.attachEventListeners();
@@ -35,17 +35,17 @@ class ScheduleManager {
     const nameInput = document.getElementById("bookingName");
 
     confirmBtn.addEventListener("click", () => {
-      const nameInput = document.getElementById("bookingName").value.trim(); // Get trimmed value
+      const nameInput = document.getElementById("bookingName").value.trim();
 
       // Only add the name if it's not an empty string
       if (nameInput !== "") {
         this.bookingDuration = {
           hours: parseInt(hoursSelect.value),
           minutes: parseInt(minutesSelect.value),
-          name: nameInput, // Use the trimmed name
+          name: nameInput,s
         };
       } else {
-        this.bookingDuration.name = "Unnamed Booking"; // Default name if empty
+        this.bookingDuration.name = "Unnamed Booking";
       }
 
       this.viewOnly = false;
@@ -434,10 +434,9 @@ class ScheduleManager {
   setupDeleteBookingHandler(optionsMenu, bookingId) {
     const deleteBookingHandler = () => {
       this.deleteBooking(bookingId);
-      document.body.removeChild(optionsMenu); // Remove options menu
+      document.body.removeChild(optionsMenu);
     };
 
-    // Attach the event listener for deleting the booking
     document
       .getElementById("deleteBookingBtn")
       .addEventListener("click", deleteBookingHandler);
