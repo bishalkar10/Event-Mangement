@@ -42,7 +42,7 @@ class ScheduleManager {
         this.bookingDuration = {
           hours: parseInt(hoursSelect.value),
           minutes: parseInt(minutesSelect.value),
-          name: nameInput,s
+          name: nameInput,
         };
       } else {
         this.bookingDuration.name = "Unnamed Booking";
