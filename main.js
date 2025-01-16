@@ -4,7 +4,7 @@ class ScheduleManager {
     this.selectedDate = null;
     this.scheduleData = this.loadScheduleData();
     this.currentMonthBookings = {}; // Initialize empty object
-    this.bookingDuration = { hours: 0, minutes: 0 };
+    this.bookingDuration = { hours: 0, minutes: 0, name: "" };
     this.viewOnly = false;
     this.lastBookingId = null; // Track the last booking ID
     this.changingBookingId = null; // Track which booking is being changed
@@ -32,10 +32,13 @@ class ScheduleManager {
       }
     });
 
+    const nameInput = document.getElementById("bookingName");
+
     confirmBtn.addEventListener("click", () => {
       this.bookingDuration = {
         hours: parseInt(hoursSelect.value),
         minutes: parseInt(minutesSelect.value),
+        name: nameInput.value || "Unnamed Booking",
       };
       this.viewOnly = false;
       modal.style.display = "none";
@@ -110,12 +113,16 @@ class ScheduleManager {
           this.currentMonthBookings[dateKey][currentHour] = {
             bookings: [],
             status: "full",
+            names: [],
           };
         }
 
         this.currentMonthBookings[dateKey][currentHour].bookings.push(
           bookingId
         );
+
+        this.currentMonthBookings[dateKey][currentHour].name =
+          booking.duration.name || "";
 
         const timeSlot = this.currentMonthBookings[dateKey][currentHour];
         timeSlot.status =
@@ -141,12 +148,15 @@ class ScheduleManager {
           this.currentMonthBookings[dateKey][currentHour] = {
             bookings: [],
             status: "half",
+            name: "",
           };
         }
 
         this.currentMonthBookings[dateKey][currentHour].bookings.push(
           bookingId
         );
+        this.currentMonthBookings[dateKey][currentHour].name =
+          booking.duration.name || "";
 
         const timeSlot = this.currentMonthBookings[dateKey][currentHour];
         timeSlot.status =
@@ -197,7 +207,13 @@ class ScheduleManager {
     for (let day = 1; day <= lastDay.getDate(); day++) {
       const dayElement = document.createElement("div");
       dayElement.className = "calendar-day";
-      dayElement.textContent = day;
+
+      const dateContainer = document.createElement("div");
+      dateContainer.className = "date-number";
+      dateContainer.textContent = day;
+
+      const bookingsContainer = document.createElement("div");
+      bookingsContainer.className = "bookings-list";
 
       const currentDay = new Date(
         Date.UTC(
@@ -207,6 +223,47 @@ class ScheduleManager {
         )
       );
       const dateKey = this.getDateKey(currentDay);
+
+      // Get unique bookings for this date
+      const bookingsForDay = new Set();
+      if (this.currentMonthBookings[dateKey]) {
+        Object.values(this.currentMonthBookings[dateKey]).forEach((slot) => {
+          slot.bookings.forEach((bookingId) => {
+            if (this.scheduleData[bookingId]) {
+              bookingsForDay.add(this.scheduleData[bookingId].name);
+            }
+          });
+        });
+      }
+
+      // Convert Set to Array and handle display logic
+      const bookings = Array.from(bookingsForDay);
+      if (bookings.length > 0) {
+        if (bookings.length <= 2) {
+          bookings.forEach((name) => {
+            const nameSpan = document.createElement("div");
+            nameSpan.className = "booking-name";
+            nameSpan.textContent = name;
+            bookingsContainer.appendChild(nameSpan);
+          });
+        } else {
+          // Show first two names and count
+          for (let i = 0; i < 2; i++) {
+            const nameSpan = document.createElement("div");
+            nameSpan.className = "booking-name";
+            nameSpan.textContent = bookings[i];
+            bookingsContainer.appendChild(nameSpan);
+          }
+          const remainingCount = document.createElement("div");
+          remainingCount.className = "remaining-count";
+          remainingCount.textContent = `+${bookings.length - 2}`;
+          bookingsContainer.appendChild(remainingCount);
+        }
+      }
+
+      dayElement.appendChild(dateContainer);
+      dayElement.appendChild(bookingsContainer);
+
       dayElement.setAttribute("data-date", dateKey);
 
       if (currentDay < today) {
@@ -255,10 +312,14 @@ class ScheduleManager {
       timeSlot.className = "time-slot";
       timeSlot.setAttribute("data-hour", hour);
 
+      const timeString = document.createElement("span");
+      timeString.className = "time-string";
+      timeString.textContent = `${hour.toString().padStart(2, "0")}:00`;
+
       const booking = dayBookings[hour];
       if (booking) {
-        const bookingIds = booking.bookings.join(",");
-        timeSlot.setAttribute("data-booking-id", bookingIds);
+        const bookingIds = booking.bookings;
+        timeSlot.setAttribute("data-booking-id", bookingIds.join(","));
         timeSlot.classList.add(
           booking.status === "multi-selected"
             ? "multi-selected"
@@ -266,10 +327,17 @@ class ScheduleManager {
             ? "half-selected"
             : "selected"
         );
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "booking-name-span";
+
+        const bookingName =
+          this.scheduleData[bookingIds[0]].duration?.name || "";
+        nameSpan.textContent = bookingName;
+        timeSlot.appendChild(nameSpan);
       }
 
-      const timeString = `${hour.toString().padStart(2, "0")}:00`;
-      timeSlot.textContent = timeString;
+      timeSlot.appendChild(timeString);
       timeSlots.appendChild(timeSlot);
     }
   }
@@ -289,6 +357,7 @@ class ScheduleManager {
       startDate: dateStr,
       startHour: startHour,
       duration: { ...this.bookingDuration },
+      name: this.bookingDuration.name,
     };
 
     this.saveScheduleData();
@@ -296,8 +365,8 @@ class ScheduleManager {
     this.renderTimeSlots();
     this.renderCalendarDays();
 
-    this.lastBookingId = bookingId; // Store the last booking ID
-    this.bookingDuration = { hours: 0, minutes: 0 };
+    this.lastBookingId = bookingId;
+    this.bookingDuration = { hours: 0, minutes: 0, name: "" };
   }
 
   // This method not being used in this app
@@ -318,9 +387,7 @@ class ScheduleManager {
       nextDate.setDate(nextDate.getDate() + 1); // Move to the next day
       const nextDateStr = this.getDateKey(nextDate);
       const nextDayBookings = this.currentMonthBookings[nextDateStr] || {};
-      console.log(nextDayBookings);
       for (let i = 0; i < newBookingEnd - 23; i++) {
-        console.log(i);
         if (i in nextDayBookings) return true;
       }
     }
@@ -394,7 +461,6 @@ class ScheduleManager {
   }
 
   changeBookingSlot(bookingId, newStartHour) {
-    console.log(bookingId, newStartHour);
     if (this.scheduleData[bookingId]) {
       const booking = this.scheduleData[bookingId];
       booking.startDate = this.getDateKey(this.selectedDate);
@@ -441,8 +507,7 @@ class ScheduleManager {
       const hour = parseInt(timeSlot.getAttribute("data-hour"), 10);
 
       // if the last booking id is the same as the booking id, delete the booking
-      if (this.lastBookingId === bookingIds[0]) 
-      {
+      if (this.lastBookingId === bookingIds[0]) {
         this.deleteBooking(this.lastBookingId);
         return;
       }
