@@ -1,11 +1,14 @@
 :root {
-  --primary-color: #fc2f00;
-  --secondary-color: #fdd835;
-  --disabled-color: #bcc7d1;
-  --selected-color: #ec7d10;
-  --text-color: #333;
-  --background-color: #a98743;
-  --calendar-bg: #e6e6e6; /* Light Gray for calendar background */
+  --primary-color: #2c3e50;
+  --secondary-color: #3498db;
+  --disabled-color: #ecf0f1;
+  --selected-color: #2980b9;
+  --text-color: #2c3e50;
+  --background-color: #f5f6fa;
+  --calendar-bg: #ffffff;
+  --accent-color: #e74c3c;
+  --hover-color: #34495e;
+  --booking-bg: rgba(52, 152, 219, 0.2);
 }
 
 * {
@@ -32,7 +35,7 @@ body {
   flex: 6;
   background: var(--calendar-bg);
   border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 20px;
   width: 100%;
   min-width: 0;
@@ -74,7 +77,7 @@ body {
   font-weight: bold;
   padding: 10px;
   background: var(--secondary-color);
-  color: var(--text-color);
+  color: white;
 }
 
 .calendar-day {
@@ -83,7 +86,7 @@ body {
   border: 1px solid #ddd;
   text-align: center;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.2s ease-in-out;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -92,7 +95,7 @@ body {
 }
 
 .calendar-day:hover:not(.disabled) {
-  background-color: var(--primary-color);
+  background-color: var(--hover-color);
   color: white;
 }
 
@@ -121,7 +124,7 @@ body {
   background: white;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 #closeTimeSlotBtn {
@@ -162,7 +165,7 @@ body {
   border: 1px solid #ddd;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.2s ease-in-out;
   position: relative;
 }
 
@@ -174,11 +177,12 @@ body {
 
 .time-slot.selected {
   background-color: var(--selected-color);
+  color: white;
 }
 
 .time-slot:hover {
-  background-color: var(--secondary-color);
-  color: var(--text-color);
+  background-color: var(--hover-color);
+  color: white;
 }
 
 .modal-overlay {
@@ -200,6 +204,7 @@ body {
   border-radius: 10px;
   width: 90%;
   max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .time-input {
@@ -235,7 +240,7 @@ body {
 
 .modal-buttons button.secondary {
   background: var(--secondary-color);
-  color: var(--text-color);
+  color: white;
 }
 
 .time-slot {
@@ -326,12 +331,13 @@ body {
 }
 
 .bookings-list {
+  width: 100%;
+  text-align: center;
   display: grid;
   grid-template-columns: 1fr;
   gap: 2px;
-  font-size: 8px;
+  font-size: 10px;
   min-width: 0;
-  width: 80%;
 }
 
 .booking-name-span,
@@ -343,7 +349,7 @@ body {
 }
 
 .booking-name {
-  background-color: rgba(236, 125, 16, 0.2);
+  background-color: var(--booking-bg);
 }
 
 @media (max-width: 768px) {
@@ -382,8 +388,8 @@ body {
     gap: 2px;
   }
 
-  .calendar-day {
-    padding: 2px;
+  .bookings-list {
+    font-size: 8px;
   }
 }
 
