@@ -7,12 +7,12 @@ class ScheduleManager {
     this.bookingDuration = { hours: 0, minutes: 0 };
     this.viewOnly = false;
     this.lastBookingId = null; // Track the last booking ID
+    this.changingBookingId = null; // Track which booking is being changed
 
     this.updateCurrentMonthBookings(); // Update before initialization
     this.initializeModal();
     this.initializeCalendar();
     this.attachEventListeners();
-    console.log(this.currentMonthBookings);
   }
 
   initializeModal() {
@@ -369,22 +369,9 @@ class ScheduleManager {
   }
 
   setupChangeSlotHandler(optionsMenu, bookingId) {
-    const changeSlotHandler = (e) => {
-      const newTimeSlot = e.target.closest(".time-slot");
-      if (newTimeSlot) {
-        const newStartHour = parseInt(
-          newTimeSlot.getAttribute("data-hour"),
-          10
-        );
-        this.changeBookingSlot(bookingId, newStartHour);
-        document.body.removeChild(optionsMenu); // Remove options menu
-        timeSlotsContainer.removeEventListener("click", changeSlotHandler); // Clean up the event listener
-      }
-    };
-
-    // Attach the event listener for changing the slot
     document.getElementById("changeSlotBtn").addEventListener("click", () => {
-      timeSlotsContainer.addEventListener("click", changeSlotHandler);
+      this.changingBookingId = bookingId; // Set the booking being changed
+      document.body.removeChild(optionsMenu);
     });
   }
 
@@ -407,6 +394,7 @@ class ScheduleManager {
   }
 
   changeBookingSlot(bookingId, newStartHour) {
+    console.log(bookingId, newStartHour);
     if (this.scheduleData[bookingId]) {
       const booking = this.scheduleData[bookingId];
       booking.startDate = this.getDateKey(this.selectedDate);
@@ -444,32 +432,44 @@ class ScheduleManager {
 
     timeSlotsContainer.addEventListener("click", (e) => {
       const timeSlot = e.target.closest(".time-slot");
-      if (timeSlot) {
-        const bookingIdsAttr = timeSlot.getAttribute("data-booking-id");
-        const bookingIds = bookingIdsAttr
-          ? bookingIdsAttr.split(",").filter(Boolean)
-          : [];
+      if (!timeSlot) return;
 
-        if (this.lastBookingId && bookingIds.length === 0) {
-          // If there's a last booking and no existing booking in the slot
-          const hour = parseInt(timeSlot.getAttribute("data-hour"), 10);
-          if (!isNaN(hour)) {
-            this.changeBookingSlot(this.lastBookingId, hour); // Change the slot for the last booking
-          }
-        } else if (bookingIds.length >= 1) {
-          this.showBookingOptions(bookingIds[0], timeSlot);
+      const bookingIdsAttr = timeSlot.getAttribute("data-booking-id");
+      const bookingIds = bookingIdsAttr
+        ? bookingIdsAttr.split(",").filter(Boolean)
+        : [];
+      const hour = parseInt(timeSlot.getAttribute("data-hour"), 10);
+
+      // if the last booking id is the same as the booking id, delete the booking
+      if (this.lastBookingId === bookingIds[0]) 
+      {
+        this.deleteBooking(this.lastBookingId);
+        return;
+      }
+      // Handle change slot operation
+      if (this.changingBookingId && bookingIds.length === 0) {
+        this.changeBookingSlot(this.changingBookingId, hour);
+        this.changingBookingId = null; // Reset after changing
+        return;
+      }
+
+      // Handle normal booking operations
+      if (this.lastBookingId && bookingIds.length === 0) {
+        if (!isNaN(hour)) {
+          this.changeBookingSlot(this.lastBookingId, hour);
+        }
+      } else if (bookingIds.length >= 1) {
+        this.showBookingOptions(bookingIds[0], timeSlot);
+      } else {
+        if (!isNaN(hour)) {
+          this.addBooking(hour);
         } else {
-          const hour = parseInt(timeSlot.getAttribute("data-hour"), 10);
-          if (!isNaN(hour)) {
-            this.addBooking(hour);
-          } else {
-            console.error("Invalid hour attribute on time slot.");
-          }
+          console.error("Invalid hour attribute on time slot.");
         }
       }
     });
 
-    // Add click event listener to close menu when clicking outside
+    // when clicking outside the options menu, close it
     document.addEventListener("click", (e) => {
       const optionsMenu = document.getElementById("activeOptionsMenu");
       const timeSlot = e.target.closest(".time-slot");
