@@ -6,6 +6,7 @@ class ScheduleManager {
     this.currentMonthBookings = {}; // Initialize empty object
     this.bookingDuration = { hours: 0, minutes: 0 };
     this.viewOnly = false;
+    this.lastBookingId = null; // Track the last booking ID
 
     this.updateCurrentMonthBookings(); // Update before initialization
     this.initializeModal();
@@ -53,6 +54,8 @@ class ScheduleManager {
   }
 
   handleDateClick(date) {
+    this.lastBookingId = null; //reset the last booking id when clicking a date else
+
     if (this.selectedDate === date) {
       document.getElementById("timeSlots").classList.remove("active");
       this.selectedDate = null;
@@ -95,7 +98,8 @@ class ScheduleManager {
       let remainingHours = booking.duration.hours;
       let remainingMinutes = booking.duration.minutes;
 
-      while (remainingHours > 0 || remainingMinutes > 0) {
+      // Handle full hours first
+      while (remainingHours > 0) {
         const dateKey = this.getDateKey(bookingDate);
 
         if (!this.currentMonthBookings[dateKey]) {
@@ -105,38 +109,48 @@ class ScheduleManager {
         if (!this.currentMonthBookings[dateKey][currentHour]) {
           this.currentMonthBookings[dateKey][currentHour] = {
             bookings: [],
-            status: "full", // Default to full
+            status: "full",
           };
         }
 
-        // Add booking ID to the time slot
         this.currentMonthBookings[dateKey][currentHour].bookings.push(
           bookingId
         );
 
-        // Adjust status based on multiple bookings or half bookings
         const timeSlot = this.currentMonthBookings[dateKey][currentHour];
-        if (timeSlot.bookings.length > 1) {
-          timeSlot.status = "multi-selected";
-        } else if (remainingMinutes > 0 && remainingHours === 0) {
-          timeSlot.status = "half";
-        } else {
-          timeSlot.status = "full";
-        }
+        timeSlot.status =
+          timeSlot.bookings.length > 1 ? "multi-selected" : "full";
 
-        // Move to the next hour
         currentHour++;
         remainingHours--;
 
-        // Handle overflow to the next day
         if (currentHour === 24) {
           bookingDate.setDate(bookingDate.getDate() + 1);
           currentHour = 0;
         }
+      }
 
-        if (remainingMinutes > 0 && remainingHours <= 0) {
-          remainingMinutes = 0; // Mark remaining minutes as handled
+      if (remainingMinutes > 0) {
+        const dateKey = this.getDateKey(bookingDate);
+
+        if (!this.currentMonthBookings[dateKey]) {
+          this.currentMonthBookings[dateKey] = {};
         }
+
+        if (!this.currentMonthBookings[dateKey][currentHour]) {
+          this.currentMonthBookings[dateKey][currentHour] = {
+            bookings: [],
+            status: "half",
+          };
+        }
+
+        this.currentMonthBookings[dateKey][currentHour].bookings.push(
+          bookingId
+        );
+
+        const timeSlot = this.currentMonthBookings[dateKey][currentHour];
+        timeSlot.status =
+          timeSlot.bookings.length > 1 ? "multi-selected" : "half";
       }
     });
   }
@@ -282,9 +296,11 @@ class ScheduleManager {
     this.renderTimeSlots();
     this.renderCalendarDays();
 
+    this.lastBookingId = bookingId; // Store the last booking ID
     this.bookingDuration = { hours: 0, minutes: 0 };
   }
 
+  // This method not being used in this app
   checkBookingOverlap(startHour, bookingDuration, dayBookings) {
     const newBookingEnd =
       startHour +
@@ -323,10 +339,21 @@ class ScheduleManager {
   }
 
   showBookingOptions(bookingId, timeSlot) {
+    // Close any existing options menu first
+    this.closeOptionsMenu();
+    
     const optionsMenu = this.createOptionsMenu(timeSlot);
+    optionsMenu.id = 'activeOptionsMenu'; // Add an ID to track the active menu
     document.body.appendChild(optionsMenu);
     this.setupDeleteBookingHandler(optionsMenu, bookingId);
     this.setupChangeSlotHandler(optionsMenu, bookingId);
+  }
+
+  closeOptionsMenu() {
+    const existingMenu = document.getElementById('activeOptionsMenu');
+    if (existingMenu) {
+      document.body.removeChild(existingMenu);
+    }
   }
 
   setupDeleteBookingHandler(optionsMenu, bookingId) {
@@ -395,6 +422,7 @@ class ScheduleManager {
   closeTimeSlot() {
     timeSlotsContainer.classList.remove("active");
     this.selectedDate = null;
+    this.lastBookingId = null; // Reset lastBookingId when closing the time slot
   }
 
   attachEventListeners() {
@@ -422,7 +450,13 @@ class ScheduleManager {
           ? bookingIdsAttr.split(",").filter(Boolean)
           : [];
 
-        if (bookingIds.length > 1) {
+        if (this.lastBookingId && bookingIds.length === 0) {
+          // If there's a last booking and no existing booking in the slot
+          const hour = parseInt(timeSlot.getAttribute("data-hour"), 10);
+          if (!isNaN(hour)) {
+            this.changeBookingSlot(this.lastBookingId, hour); // Change the slot for the last booking
+          }
+        } else if (bookingIds.length > 1) {
           alert(`Multiple bookings: ${bookingIds.join(", ")}`);
         } else if (bookingIds.length === 1) {
           this.showBookingOptions(bookingIds[0], timeSlot);
@@ -434,6 +468,15 @@ class ScheduleManager {
             console.error("Invalid hour attribute on time slot.");
           }
         }
+      }
+    });
+
+    // Add click event listener to close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      const optionsMenu = document.getElementById('activeOptionsMenu');
+      const timeSlot = e.target.closest('.time-slot');
+      if (optionsMenu && !optionsMenu.contains(e.target) && !timeSlot) {
+        this.closeOptionsMenu();
       }
     });
   }
